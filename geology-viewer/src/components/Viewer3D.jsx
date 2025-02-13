@@ -113,6 +113,44 @@ function Polygon({ points, color }) {
   );
 }
 
+function Borehole({ data, color = "#FF0000" }) {
+  const { x, elevation, depth, name } = data;
+
+  return (
+    <group>
+      <mesh position={[x, -depth/2, elevation]}>
+        <cylinderGeometry args={[2, 2, depth, 8]} />
+        <meshStandardMaterial 
+          color={color} 
+          opacity={0.7}
+          transparent={true}
+        />
+      </mesh>
+
+
+      <mesh position={[x, 0, elevation]}>
+        <cylinderGeometry args={[4, 4, 5, 8]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+
+      {/* Label */}
+      <Html
+        position={[x, 5, elevation]}
+        style={{
+          backgroundColor: "white",
+          padding: "2px 4px",
+          borderRadius: "2px",
+          fontSize: "10px",
+          transform: "translate3d(-50%, -100%, 0)",
+          whiteSpace: "nowrap"
+        }}
+      >
+        {name}
+      </Html>
+    </group>
+  );
+}
+
 export default function Viewer3D({ data }) {
   if (!data) return null;
 
@@ -187,6 +225,15 @@ export default function Viewer3D({ data }) {
             />
           ))
         )}
+        {data.polygonsBySection.map(section =>
+          section.boreholes.map((borehole, index) => (
+            <Borehole
+              key={`${section.sectionId}-borehole-${index}`}
+              data={borehole}
+            />
+          ))
+        )}
+
       </Canvas>
     </div>
   );
