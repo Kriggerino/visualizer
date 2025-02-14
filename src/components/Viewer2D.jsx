@@ -81,19 +81,69 @@ export default function Viewer2D({ data, selectedSection }) {
       .attr('transform', `translate(${padding},0)`);
 
     // Draw polygons
-    section.polygons.forEach(polygon => {
+    section.polygons.forEach((polygon, index) => {
       const points = polygon.points2D;
       
       const lineGenerator = d3.line()
         .x(d => xScale(d.vertex[0]))
         .y(d => yScale(d.vertex[1]));
 
-      mainGroup.append('path')
+      // Calculate centroid for label placement
+      const centroidX = d3.mean(points, d => xScale(d.vertex[0]));
+      const centroidY = d3.mean(points, d => yScale(d.vertex[1]));
+
+      // Create a group for the polygon and its label
+      const polygonGroup = mainGroup.append('g');
+
+      // Draw polygon
+      polygonGroup.append('path')
         .datum(points)
         .attr('d', lineGenerator)
         .attr('fill', `#${polygon.color}`)
         .attr('stroke', 'black')
-        .attr('stroke-width', 1);
+        .attr('stroke-width', 1)
+        .style('cursor', 'pointer')
+        .on('click', (event) => {
+          // Remove any existing labels first
+          mainGroup.selectAll('.polygon-label').remove();
+          
+          // Add new label
+          const labelGroup = polygonGroup.append('g')
+            .attr('class', 'polygon-label');
+
+          // Add background rectangle for better readability
+          const labelBg = labelGroup.append('rect')
+            .attr('fill', 'white')
+            .attr('opacity', 0.8)
+            .attr('rx', 5)
+            .attr('ry', 5);
+
+          // Add text elements
+          const symbolText = labelGroup.append('text')
+            .attr('x', centroidX)
+            .attr('y', centroidY - 10)
+            .attr('text-anchor', 'middle')
+            .attr('class', styles.labelText)
+            .text(polygon.symbol);
+
+          const descText = labelGroup.append('text')
+            .attr('x', centroidX)
+            .attr('y', centroidY + 10)
+            .attr('text-anchor', 'middle')
+            .attr('class', styles.labelText)
+            .text(polygon.symbolDescription);
+
+          // Size the background rectangle based on text dimensions
+          const symbolBBox = symbolText.node().getBBox();
+          const descBBox = descText.node().getBBox();
+          const padding = 10;
+          
+          labelBg
+            .attr('x', centroidX - Math.max(symbolBBox.width, descBBox.width)/2 - padding)
+            .attr('y', centroidY - 25)
+            .attr('width', Math.max(symbolBBox.width, descBBox.width) + (padding * 2))
+            .attr('height', 50);
+        });
     });
 
     // Function to update axes during zoom
